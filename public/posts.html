@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <style>
+      /* 기본 스타일 설정 */
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+      }
+
+      /* 제목 스타일 */
+      h1,
+      h2 {
+        color: #333;
+        padding: 0.5em 1em;
+      }
+
+      /* 본문과 댓글 영역 전체를 감싸는 스타일 */
+      #post-content,
+      #comments-section {
+        background: #f9f9f9;
+        padding: 1em;
+        border-radius: 5px;
+        margin: 0.5em 1em;
+      }
+
+      /* 글쓴이, 날짜 등의 부가 정보 스타일 */
+      p {
+        color: #555;
+      }
+
+      /* 댓글 폼 스타일 */
+      #comment-form {
+        background: #eee;
+        padding: 1em;
+        border-radius: 5px;
+        margin: 1em;
+      }
+
+      /* 댓글 폼 내부의 라벨과 입력 필드 스타일 */
+      #comment-form label,
+      #comment-form input,
+      #comment-form textarea {
+        display: block;
+        margin: 0.5em 0;
+      }
+
+      /* 댓글 버튼 스타일 */
+      #submit-comment {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 0.5em 1em;
+        border-radius: 3px;
+        cursor: pointer;
+      }
+
+      #submit-comment:hover {
+        background: #0056b3;
+      }
+
+      /* 댓글 영역 스타일 */
+      #comments-section {
+        margin-top: 1em;
+      }
+
+      /* 댓글 하나하나의 스타일 */
+      #comments-section p {
+        padding: 0.5em;
+        margin: 0.5em 0;
+      }
+
+      #comments-section hr {
+        margin: 0.5em 0;
+      }
+
+      /* 페이지 이동 버튼 스타일 */
+      #prev-button,
+      #next-button {
+        margin: 1em;
+        padding: 0.5em 1em;
+        border: 1px solid #ccc;
+        background: #f1f1f1;
+        cursor: pointer;
+      }
+
+      #prev-button:hover,
+      #next-button:hover {
+        background: #ddd;
+      }
+    </style>
+    <meta charset="UTF-8" />
+    <title>Post and Comments</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  </head>
+  <body>
+    <!-- Display post details -->
+    <h1 id="post-title">Post Title</h1>
+    <p>Author: <span id="post-author"></span></p>
+    <p>Date: <span id="post-date"></span></p>
+    <p id="post-content">Post Content</p>
+    <div id="comment-form">
+      <h2>Add a Comment</h2>
+      <label for="comment-user">User:</label>
+      <input type="text" id="comment-user" name="user" /><br /><br />
+      <label for="comment-password">Password:</label>
+      <input
+        type="password"
+        id="comment-password"
+        name="password"
+      /><br /><br />
+      <label for="comment-content">Comment:</label><br />
+      <textarea
+        id="comment-content"
+        name="content"
+        rows="4"
+        cols="50"
+      ></textarea
+      ><br /><br />
+      <button id="submit-comment">Submit Comment</button>
+    </div>
+    <!-- Display comments -->
+    <div id="comments-section">
+      <!-- Comments will be appended here -->
+    </div>
+
+    <!-- Navigation buttons -->
+    <button id="prev-button">Previous</button>
+    <button id="next-button">Next</button>
+
+    <script>
+      // 페이지 URL에서 postId를 가져옴
+      const postId = window.location.pathname.split("/")[2];
+
+      // 모든 필수 정보가 존재하는지 확인하는 함수
+      const isValidInput = (user, password, content) => {
+        return user && password && content;
+      };
+
+      const fetchPostAndComments = async () => {
+        try {
+          const res = await $.ajax(`/api/posts/${postId}`, {
+            method: "GET",
+          });
+
+          $("#post-title").text(res.data.title);
+          $("#post-author").text(res.data.user);
+          $("#post-date").text(
+            new Date(res.data.createdAt).toLocaleDateString()
+          );
+          $("#post-content").text(res.data.content);
+
+          const commentRes = await $.ajax(`/api/posts/${postId}/comments`, {
+            method: "GET",
+          });
+
+          let commentsHtml = "<h2>Comments</h2>";
+          commentRes.data.forEach((comment) => {
+            commentsHtml += `
+              <p><strong>${comment.user}</strong> says:</p>
+              <p>${comment.content}</p>
+              <p>Date: ${new Date(comment.createdAt).toLocaleDateString()}</p>
+              <hr>
+            `;
+          });
+
+          $("#comments-section").html(commentsHtml);
+        } catch (error) {
+          console.error("An error occurred:", error);
+        }
+      };
+
+      document
+        .getElementById("submit-comment")
+        .addEventListener("click", async () => {
+          const user = $("#comment-user").val();
+          const password = $("#comment-password").val();
+          const content = $("#comment-content").val();
+
+          if (!isValidInput(user, password, content)) {
+            alert("데이터 형식이 올바르지 않습니다.");
+            return;
+          }
+
+          try {
+            const res = await $.ajax(`/api/posts/${postId}/comments`, {
+              method: "POST",
+              data: JSON.stringify({ user, password, content }),
+              contentType: "application/json",
+            });
+
+            if (res.message === "댓글을 생성하였습니다.") {
+              fetchPostAndComments();
+            }
+          } catch (error) {
+            console.error("An error occurred:", error);
+          }
+        });
+
+      fetchPostAndComments();
+    </script>
+  </body>
+</html>

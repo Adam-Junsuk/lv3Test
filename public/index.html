@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+    />
+    <style>
+      .card {
+        border: 1px solid #e1e4e8;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: 0.3s;
+      }
+      .card:hover {
+        box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+      }
+      .navbar {
+        background-color: #1da1f2;
+        color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar navbar-light">
+      <span class="navbar-brand mb-0 h1">게시글 작성</span>
+    </nav>
+
+    <div class="container mt-5">
+      <form id="post-form">
+        <div class="form-group">
+          <label for="user">작성자명</label>
+          <input type="text" class="form-control" id="user" required />
+        </div>
+        <div class="form-group">
+          <label for="password">비밀번호</label>
+          <input type="password" class="form-control" id="password" required />
+        </div>
+        <div class="form-group">
+          <label for="title">제목</label>
+          <input type="text" class="form-control" id="title" required />
+        </div>
+        <div class="form-group">
+          <label for="content">내용</label>
+          <textarea
+            class="form-control"
+            id="content"
+            rows="5"
+            required
+          ></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">작성하기</button>
+      </form>
+    </div>
+
+    <div class="container mt-5">
+      <h2>게시글 목록</h2>
+      <div id="post-list"></div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        function fetchPosts() {
+          fetch("http://localhost:3017/api/posts") // 'api/' 추가
+            .then((response) => response.json())
+            .then((response) => {
+              const data = response.data;
+              const postList = document.getElementById("post-list");
+              postList.innerHTML = "";
+
+              if (Array.isArray(data)) {
+                data.forEach((post) => {
+                  const postItem = document.createElement("div");
+                  postItem.className = "card mb-3";
+                  postItem.innerHTML = `
+                  <div class="card-header">
+                    ${post.user} - ${new Date(post.createdAt).toLocaleString()}
+                  </div>
+                  <div class="card-body">
+                    <h5 class="card-title">${post.title}</h5>
+                    <p class="card-text">${post.content ? post.content : ""}</p>
+                  </div>
+                `;
+                  postItem.addEventListener("click", () => {
+                    window.location.href = `/posts/${post.postId}`; // 'api/' 추가
+                  });
+                  postList.appendChild(postItem);
+                });
+              }
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+            });
+        }
+
+        fetchPosts(); // 페이지 로드 시 게시글 목록 갱신
+
+        const form = document.getElementById("post-form");
+        form.addEventListener("submit", async function (e) {
+          e.preventDefault();
+
+          const user = document.getElementById("user").value;
+          const password = document.getElementById("password").value;
+          const title = document.getElementById("title").value;
+          const content = document.getElementById("content").value;
+
+          try {
+            const res = await fetch("http://localhost:3017/api/posts", {
+              // 'api/' 추가
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ user, password, title, content }),
+            });
+
+            const data = await res.json();
+
+            if (data.message) {
+              alert(data.message);
+              fetchPosts(); // 게시글 목록 갱신
+            }
+          } catch (error) {
+            console.error("Error:", error);
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,21 @@
+// schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+
+
+// Posts 테이블 정의
+model Post {
+  id        Int      @id @default(autoincrement()) // 게시글 번호 (DB 인덱스), 자동 증가
+  title     String   // 게시글 제목
+  content   String   // 게시글 내용
+  createdAt DateTime @default(now())              // 생성 일자, 기본값은 현재 시간
+  updatedAt DateTime @updatedAt                   // 수정 일자, 업데이트 될 때마다 자동으로 변경
+}
